@@ -3,27 +3,25 @@
 const metrics = require('legion-metrics');
 const instrument = require('legion-instrument');
 const Io = require('legion-io');
+const package_json = require('../package.json');
 
 const SUPPORTED_IO_METHODS = ['chain', 'run', '_type'];
 
 const Handler = {};
 
 function pathTo(property) {
-  if( typeof property === 'number' )
-    return '[' + property + ']';
-
-  if( typeof property === 'string' )
+  if( typeof property === 'string' && !(/^\d+$/).test(property) ) {
     return '.' + property;
+  }
 
-  if( typeof property === 'symbol' )
-    return '[' + property.toString + ']';
+  return '[' + property.toString() + ']';
 }
 
 Handler.get = function(target, property) {
-  console.log(target.path + ' : GET ' + property);  // eslint-disable-line no-console
+  proxyLog(target.path + ' : GET ' + property);
 
   if( property === 'inspect' )
-    return () => 'Legion ' + target.path;
+    return () => package_json.name + ' ' + target.path;
 
   if( property === 'then' || property === 'catch' )
     throw new Error('Called "' + property + '" but this Legion wrapper object is not a real promise.');
@@ -46,7 +44,7 @@ Handler.get = function(target, property) {
 };
 
 Handler.apply = function(target, _thisArg, args) {
-  console.log(target.path + ' : APPLY ' + args);  // eslint-disable-line no-console
+  proxyLog(target.path + ' : APPLY ' + args);
 
   return proxify(Object.assign({}, target, {
     action: target.action.chain(x => Object.assign({ parent: undefined, value: x.value.apply(x.parent, args) })),
@@ -55,7 +53,7 @@ Handler.apply = function(target, _thisArg, args) {
 };
 
 Handler.has = function(target, property) {
-  console.log(target.path + ' : HAS ' + property);  // eslint-disable-line no-console
+  proxyLog(target.path + ' : HAS ' + property);
 
   if( property === 'inspect' )
     return true;
@@ -72,18 +70,14 @@ function thenable(result) {
 
 function proxifyRoot(action, options) {
   options = Object.assign({}, {
-    apiname: 'AnonymousProxy',
-    apicall: 'root',
-    followup: x => x,
+    apiname: 'AnonymousProxy.root',
     io: undefined
   }, options || {});
 
   return proxify({
     action: Io.of().chain(() => action).chain(x => Object.assign({ parent: undefined, value: x})),
-    path: (options.apiname + '.' + options.apicall),
+    path: options.apiname,
     apiname: options.apiname,
-    apicall: options.apicall,
-    followup: options.followup,
     io: undefined
   });
 }
@@ -95,3 +89,8 @@ function proxify(context) {
 }
 
 module.exports = proxifyRoot;
+
+function proxyLog(msg) {
+  if( process.env.LEGION_PROXY_LOG )
+    console.log(msg);  // eslint-disable-line no-console
+}
