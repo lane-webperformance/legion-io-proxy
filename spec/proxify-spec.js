@@ -79,12 +79,11 @@ describe('The Legion Proxy object', function() {
     const testcase = SillyProxy.goofyFunction().chain(SillyProxy.goofy.foo()[0]);
     const target = metrics.Target.create(metrics.merge);
 
-    testcase.run(core.Services.create().withMetricsTarget(target))
-      .then(() => {
-        const metrics = JSON.stringify(target.get());
-        expect(JSON.parse(metrics).tags.api.SillyProxy).not.toBe(null);
-        expect(JSON.parse(metrics).tags['api-call']['Silly.goofyFunction()']).toBeTruthy();
-        expect(JSON.parse(metrics).tags['api-call']['Silly.goofy.foo()[0]']).toBeTruthy();
+    testcase.run(core.Services.create().withMetricsTarget(target)).then(() => target.flush())
+      .then(metrics => {
+        expect(metrics.tags.api.Silly).not.toBe(null);
+        expect(metrics.tags['api-call']['Silly.goofyFunction()']).toBeTruthy();
+        expect(metrics.tags['api-call']['Silly.goofy.foo()[0]']).toBeTruthy();
       }).then(done).catch(done.fail);
   });
 });
