@@ -1,6 +1,6 @@
 {
   "name": "legion-io-proxy",
-  "version": "0.0.45",
+  "version": "0.0.46",
   "description": "Proxify and instrument any Promise-based API",
   "main": "src/index.js",
   "scripts": {
