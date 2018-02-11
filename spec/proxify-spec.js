@@ -63,7 +63,7 @@ describe('The Legion Proxy object', function() {
     const testcase = proxify(Silly).goofy.foo().chain(x => x.length);
 
     testcase.run(core.Services.create().withMetricsTarget(metrics.Target.create(metrics.merge)))
-      .then(done.fail).catch(done);
+      .then(done.fail).catch(() => done());
   });
 
   it("doesn't allow calling then() on anything", function() {
